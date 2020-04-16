@@ -130,19 +130,26 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    connect();
     // if (AudioServiceBackground.state.basicState == BasicPlaybackState.none) {
-    AudioService.start(
+
+    // }
+    // logger.log(widget.selectedItem.toString());
+
+    startPlayer();
+  }
+
+  startPlayer() async {
+    connect();
+    await AudioService.start(
       backgroundTaskEntrypoint: _audioPlayerTaskEntrypoint,
       androidNotificationChannelName: 'Audio Service Demo', //TODO: Rename
       notificationColor: 0xFF2196f3,
       androidNotificationIcon: 'mipmap/ic_launcher',
       enableQueue: true,
     );
-    // }
-    // logger.log(widget.selectedItem.toString());
+    await AudioService.addQueueItem(widget.selectedItem);
 
-    AudioService.addQueueItem(widget.selectedItem);
+    AudioService.play();
   }
 
   @override
@@ -668,6 +675,7 @@ class AudioPlayerTask extends BackgroundAudioTask {
     });
     var eventSubscription = _audioPlayer.playbackEventStream.listen((event) {
       final state = _stateToBasicState(event.state);
+
       if (state != BasicPlaybackState.stopped) {
         _setState(
           state: state,
@@ -677,19 +685,28 @@ class AudioPlayerTask extends BackgroundAudioTask {
     });
 
     // AudioServiceBackground.setQueue(_queue);
-    await onSkipToNext();
+    // await onSkipToNext();
+
+    //Code additions (for async issue)
+    _skipState = null;
+    _playing = false;
+    _setState(state: BasicPlaybackState.paused);
+
     await _completer.future;
     playerStateSubscription.cancel();
     eventSubscription.cancel();
   }
 
   void _handlePlaybackCompleted() {
-    if (hasNext) {
-      onSkipToNext();
-    } else {
-      // onStop();
-      onPause();
-    }
+    //original code
+    // if (hasNext) {
+    //   onSkipToNext();
+    // } else {
+    //   // onStop();
+    //   onPause();
+    // }
+
+    onPause();
   }
 
   void playPause() {
